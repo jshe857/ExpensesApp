@@ -1,0 +1,24 @@
+<script src="js/view/editExpense.js"></script>
+
+<div>
+	<div data-role="header" data-theme="c">
+		<h2>Expense</h2>
+		<button class="ui-icon-nodisc ui-icon-alt back" data-role="button" data-theme="e" data-icon="arrow-l" data-iconpos="notext" data-direction="reverse"></button>
+	</div>
+	<div data-role="content">
+		<p><canvas class="receiptThumb" width="75" height="75" id="editExpenseReceipt"></canvas></p>
+		<ul id="expenseDetailsList" data-role="listview" data-theme="f" data-inset="false" class="ui-icon-nodisc ui-icon-alt clear">
+			<li data-role="list-divider" data-theme="f">Type</li>
+		</ul>
+		<div class='horizontal-rule hidden'></div>
+		<a id="deleteBtn" class='hidden' data-role="button" data-theme="a" data-inline="false">Delete Expense</a>
+
+		<div class="opacity"></div>
+		
+		<div class="confirm">
+			<span class="question">Are you sure you want to delete this expense?</span>
+			<a id="noBtn" data-role="button" data-theme="a">No</a>
+			<a id="yesBtn" data-role="button" data-theme="b">Yes</a>
+		</div>
+	</div>	
+</div>

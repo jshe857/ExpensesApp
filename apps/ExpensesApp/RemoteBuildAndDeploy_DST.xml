@@ -1,0 +1,831 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="RemoteBuildAndDeploy_MYAPPNAME" basedir="." default="buildenvoy_iphone" >
+    
+    
+    <!--  User Properties -->
+    <!--  Uncomment any of these to avoid prompt -->
+    <!-- 
+    <property name="IBMIntranetID" value="youribmid@us.ibm.com"/> 
+    <property name="IBMIntranetPW" value="enter_your_password"/>  
+    <property name="SigningSetupiOS" value="default"/>
+    <property name="SigningSetupAndroid" value="Release"/>
+    <property name="AppCenter" value="IBM_INTERNAL_DEV_AND_TEST_APPCENTER"/>
+    <property name="APPDescription" value="application description"/>
+    -->
+        
+    <!--  BuildEnvoy Properties -->
+    <property name="BuildServerURL" value="https://atlbzbuild01.atl.dst.ibm.com:8443"/>
+    <property name="be.temp.dir" value="buildenvoy_temp"/>
+    
+    
+    <!-- ##################################### COMMON ##################################### -->
+	<target name="-config">
+	    <input message="Please enter your IBM Intranet ID:"  addproperty="IBMIntranetID" defaultvalue="youribmid@us.ibm.com"/>
+    	<input message="Please enter your IBM Intranet password:"  addproperty="IBMIntranetPW" defaultvalue="enter_your_password" /> 
+    	<input message="Please enter a short app description :"  addproperty="APPDescription" defaultvalue="Application published by: ${IBMIntranetID}" /> 
+    	<input message="Please select which App Center you'd like to publish to:"  addproperty="AppCenter" defaultvalue="IBM_EXTERNAL_DST_APPCENTER" validargs="IBM_EXTERNAL_DST_APPCENTER, IBM_EXTERNAL_DST_APPCENTER_2,IBM_EXTERNAL_OFFICIAL_DEMOS_APPCENTER"/>
+		<echo>${IBMIntranetID}</echo>
+		<echo>${BuildServerURL}</echo>
+		<echo>${AppCenter}</echo>
+		<echo>${APPDescription}</echo>
+	</target>
+	
+	<target name="-clean" description="clean out temporary files">
+        <echo>cleanning buildenvoy temporary files/dir</echo>
+        <delete dir="${be.temp.dir}" failonerror="true"/>     
+    </target>
+    
+	<target name="buildenvoy_all" depends="-config, -config_ios, -config_android" description="build and deploy">
+        <echo>Build Envoy</echo>
+        <antcall target="buildenvoy_iphone"/>
+        <antcall target="buildenvoy_android"/>
+        <antcall target="buildenvoy_ipad"/>
+        <echo>.</echo>
+        <echo>.</echo>
+        <echo>.</echo>
+        <echo>.</echo>
+        <echo>.</echo>
+        <echo>iPhone, Android, and iPad APPLICATIONS HAVE BEEN SUCCESSFULLY BUILT AND DEPLOYED!!! </echo> 
+    </target>
+    
+	<target name="-config_ios">
+    	<input message="Please select provisioning profile to use for iOS"  addproperty="SigningSetupiOS" defaultvalue="default" validargs="default,apns_enabled"/>
+    	<input message="Please select which iOS SDK to compile: " addproperty="iOSSDK" defaultvalue="iphoneos" validargs="iphoneos6.1,iphoneos7.0"/>
+		<echo>${SigningSetupiOS}</echo>
+		<echo>${iOSSDK}</echo>
+	</target>
+	
+	<target name="-config_android">
+    	<input message="Please select keystore to use for Android"  addproperty="SigningSetupAndroid" defaultvalue="Release" validargs="Release"/> 
+    	<input message="Please select which Android SDK to compile: \nandroid-8 = Android 2.2\nandroid-14 = Android 4.0\nandroid-15 = Android 4.0.3\nandroid-16 = Android 4.1.2\nandroid-17 Android 4.2.2" addproperty="androidSDK" defaultvalue="android-8" validargs="android-8, android-14, android-15, android-16, android-17"/>
+		<echo>${SigningSetupAndroid}</echo> 
+		<echo>${androidSDK}</echo>
+	</target>
+	
+	<!-- ##################################### IPHONE ##################################### -->
+	
+	<target name="-prep_iphone" depends="-clean" description="gather necessary artifacts">
+         <echo>zipping up iphone xcode project</echo>
+         <mkdir dir="${be.temp.dir}"/>
+         <zip destfile="${be.temp.dir}/be_iphone.zip"  basedir="iphone/native"/>
+    </target>
+    
+	<target name="buildenvoy_iphone" depends="-config,-config_ios,-prep_iphone" description="launch remote iphone build and deploy app">
+         <echo>starting iphone remote build and deploy</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be.iphone.out"  outputproperty="be.iphone.out" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="--form-string" />
+			<arg value="signingSetup=${SigningSetupiOS}" />
+			<arg value="--form-string" />
+			<arg value="AppCenter=${AppCenter}" />
+			<arg value="--form-string" />
+			<arg value="appDescr=${APPDescription}" />
+			<arg value="--form-string" />
+			<arg value="iOSSDK=${iOSSDK}" />
+			<arg value="-F" />
+			<arg value="file=@be_iphone.zip" />
+			<arg value="-F" />
+			<arg value="http.protocol.expect-continue=true" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/upload/iphone" />
+		</exec>	
+		<echo message = "${be.iphone.out}"/>		
+ 		<condition property="iphone_builderror_found">
+ 	    	<contains string="${be.iphone.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${iphone_builderror_found}"
+ 	    	message="Problems encountered.  Please check error message above for more details.  
+ 	    	Ensure your id and password are correctly set.  
+ 	    	Ensure your AppID is set to comply with com.ibm.cio.be.* format."    />
+ 		<antcall target="-wait_for_iphone_build"/>
+ 		<antcall target="-clean"/>
+ 		<echo>.</echo>
+        <echo>.</echo>
+        <echo>iPhone APPLICATION HAS BEEN SUCCESSFULLY BUILT AND DEPLOYED!!! </echo> 
+    </target>
+    
+	<target name="-get_iphone_buildID" description="gets iphone buildID">
+        
+        <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.iphone.json" >       
+			<arg value="-1" />
+			<arg value="be.iphone.out" />
+		</exec>
+		
+        <exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.iphone.json" >       
+			<arg value="-1" />
+			<arg value="be.iphone.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting BuildID for iphone request");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be.iphone.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("iphone_" + i,struct[i]);
+            	if (i.equals("buildID")) {
+            		echo.setMessage("FOUND: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        </script> 
+        <echo>iphone_buildID FOUND1 ${iphone_buildID}</echo> 
+        <antcall target="-check_buildenvoy_iphone_status"/>  
+          
+    </target>    
+	
+	<!-- <available file="${be.temp.dir}/45a7e4c20c5d1000e06f314e29ed29ed_status.out"/> -->
+    <!-- var file = new File(project.getProperty("be.temp.dir") + "/45a7e4c20c5d1000e06f314e29ed29ed_status.out"); -->
+    <target name="-wait_for_iphone_build">
+        <echo>WAITING for iPHONE BUILD Results</echo> 
+		<waitfor maxwait="5" maxwaitunit="minute" checkevery="10" checkeveryunit="second"> 
+		        <scriptcondition language="javascript" value="false">
+    				importClass(java.io.File);
+        			importClass(java.io.FileReader);
+        			importClass(java.io.BufferedReader);
+        			importClass(java.io.FileWriter);
+        			importClass(java.io.BufferedWriter);
+        			
+        			call = project.createTask("antcall");
+        			call.setInheritAll(true);
+        			call.setInheritRefs(true);
+        			call.setTarget("-get_iphone_buildID");  
+        			call.perform();   				
+
+        			echo = project.createTask("echo");
+        			echo.setMessage("Waiting and checking on iphone build status");
+        			echo.perform();
+        			
+        			var file2 = new File(project.getProperty("be.temp.dir") + "/be.iphone.json");
+        			fr2 = new FileReader(file2);
+        			br2 = new BufferedReader(fr2);
+        			
+        			var json2 = br2.readLine();
+        			var struct2 = eval("(" + json2 + ")");
+        			project.setProperty("iphone_buildID",struct2["buildID"]);
+        			       			
+        			echo.setMessage("CONFIG be.temp.dir= " + project.getProperty("be.temp.dir") + " iphone_buildID= " + project.getProperty("iphone_buildID"));
+        			echo.perform();
+        			
+        			var file = new File(project.getProperty("be.temp.dir") + "/" + project.getProperty("iphone_buildID") + "_status.out");
+        			fr = new FileReader(file);
+        			br = new BufferedReader(fr);
+        			
+        			// Read the file. 
+        			// This assumes the file has no line breaks and is one line.
+        			var json = br.readLine();
+
+        			// Evaluate the JSON.
+        			var struct = eval("(" + json + ")");
+        			        			     			
+        			if ("COMPLETED".equals(struct["state"]))  {
+        				self.setValue(true);
+        				if ("Cancelled".equals(struct["stage"]) || "Died".equals(struct["stage"])) {
+        					project.setProperty("iphone_build_cancelled",true);
+        					echo.setMessage("BUILD WAS CANCELLED... ");
+        					echo.perform();
+        				} else if ("Built".equals(struct["stage"])) {
+        				    echo.setMessage("BUILD HAS COMPLETED AND iPhone APP HAS BEEN DEPLOYED.  DOWNLOAD APP FROM APP CENTER");
+        					echo.perform();
+        				} else if ("Failed".equals(struct["stage"])) {
+        					project.setProperty("iphone_build_failed",true);
+        					echo.setMessage("BUILD HAD FAILED... CHECK YOUR APP ID AND ENSURE TO REDEPLOY iphone ENVIRONMENT");
+        					echo.perform();
+        				}     				
+        			} else {
+        				echo.setMessage("BUILD IN PROGRESS... " + struct["state"] + ": " + struct["stage"]);
+        				echo.perform();
+        				self.setValue(false); 
+        			}     			
+				</scriptcondition>
+       </waitfor>
+       <fail
+ 	    	if="iphone_build_failed"
+ 	    	message="iphone Build has failed. Ensure your App ID has been set correctly to comply with wildcard: com.ibm.cio.be.
+ 	    	Contact administrator for more details."    />
+       
+        <fail
+ 	    	if="iphone_build_cancelled"
+ 	    	message="Build request has been cancelled by administrator. Please try again or contact administrator to report problem."    />
+       
+	</target>
+	
+        
+    <target name="-check_buildenvoy_iphone_status"  description="checks build and deploy status for iphone build request">
+         <echo>checking build envoy_status for iphone build request: ${iphone_buildID}</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be_iphone_status.out" outputproperty="be_iphone_status.out" errorproperty="be_iphone_status.err" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/status/${iphone_buildID}" />
+		</exec>
+		<echo message = "${be_iphone_status.out}"/>
+ 		<condition property="iphone_statuserror_resourcenotavailable_found">
+ 	    	<contains string="${be_iphone_status.out}" substring="The requested resource () is not available." casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${iphone_statuserror_resourcenotavailable_found}"
+ 	    	message="BuildEnvoy is currently not reachable. 
+ 	    	Contact the system administrator to report problem."    />
+ 		 <condition property="iphone_statuserror_found">
+ 	    	<contains string="${be_iphone_status.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${iphone_statuserror_found}"
+ 	    	message="Problems encountered.  Please check error message above.  
+ 	    	Ensure your id and password are correctly set.  
+ 	    	Ensure your AppID is set to comply with com.ibm.cio.be.* format."    />
+ 		 <antcall target="-get_buildenvoy_iphone_status"/>
+    </target>
+        
+    <target name="-get_buildenvoy_iphone_status" description="gets iphone build status">
+         <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_iphone_status.json" >       
+			<arg value="-1" />
+			<arg value="be_iphone_status.out" />
+		</exec>
+		
+        <exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_iphone_status.json" >       
+			<arg value="-1" />
+			<arg value="be_iphone_status.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting iphone build status");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be_iphone_status.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("iphone_" + i,struct[i]);
+            	if ("state".equals(i)) {
+            		echo.setMessage("FOUND state: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        	
+
+        </script> 
+        <echo>iphone_state FOUND state ${iphone_state}</echo> 
+        <echo>${be.temp.dir}/${iphone_buildID}_status.out</echo> 
+		<echo file="${be.temp.dir}/${iphone_buildID}_status.out">{"state":"${iphone_state}","stage":"${iphone_stage}"}</echo>    
+    </target>
+    
+
+    
+    <!-- ##################################### ANDROID ##################################### -->
+    
+    <target name="-prep_android" depends="-clean" description="gather necessary artifacts">
+         <echo>zipping up android xcode project</echo>
+         <mkdir dir="${be.temp.dir}"/>
+         <zip destfile="${be.temp.dir}/be_android.zip"  basedir="android/native"/>
+    </target>
+    
+	<target name="buildenvoy_android" depends="-config,-config_android,-prep_android" description="launch remote android build and deploy app">
+         <echo>starting android remote build and deploy</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be.android.out"  outputproperty="be.android.out" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="--form-string" />
+			<arg value="signingSetup=Release" />
+			<arg value="--form-string" />
+			<arg value="AppCenter=${AppCenter}" />
+			<arg value="--form-string" />
+			<arg value="appDescr=${APPDescription}" />
+			<arg value="--form-string" />
+			<arg value="androidSDK=${androidSDK}" />
+			<arg value="-F" />
+			<arg value="file=@be_android.zip" />
+			<arg value="-F" />
+			<arg value="http.protocol.expect-continue=true" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/upload/android" />
+		</exec>	
+		<echo message = "${be.android.out}"/>		
+ 		<condition property="android_builderror_found">
+ 	    	<contains string="${be.android.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${android_builderror_found}"
+ 	    	message="Problems encountered.  Please check error message above for more details.  
+ 	    	Ensure your id and password are correctly set.  "  />
+ 		<antcall target="-wait_for_android_build"/>
+ 		<antcall target="-clean"/>
+ 		<echo>.</echo>
+        <echo>.</echo>
+        <echo>Android APPLICATION HAS BEEN SUCCESSFULLY BUILT AND DEPLOYED!!! </echo> 
+    </target>
+    
+	<target name="-get_android_buildID" description="gets android buildID">
+        
+        <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.android.json" >       
+			<arg value="-1" />
+			<arg value="be.android.out" />
+		</exec>
+		
+        <exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.android.json" >       
+			<arg value="-1" />
+			<arg value="be.android.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting BuildID for android request");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be.android.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("android_" + i,struct[i]);
+            	if (i.equals("buildID")) {
+            		echo.setMessage("FOUND: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        </script> 
+        <echo>android_buildID FOUND1 ${android_buildID}</echo> 
+        <antcall target="-check_buildenvoy_android_status"/>  
+          
+    </target>    
+	
+	<!-- <available file="${be.temp.dir}/45a7e4c20c5d1000e06f314e29ed29ed_status.out"/> -->
+    <!-- var file = new File(project.getProperty("be.temp.dir") + "/45a7e4c20c5d1000e06f314e29ed29ed_status.out"); -->
+    <target name="-wait_for_android_build">
+        <echo>WAITING for android BUILD Results</echo> 
+		<waitfor maxwait="3" maxwaitunit="minute" checkevery="10" checkeveryunit="second"> 
+		        <scriptcondition language="javascript" value="false">
+    				importClass(java.io.File);
+        			importClass(java.io.FileReader);
+        			importClass(java.io.BufferedReader);
+        			importClass(java.io.FileWriter);
+        			importClass(java.io.BufferedWriter);
+        			
+        			call = project.createTask("antcall");
+        			call.setInheritAll(true);
+        			call.setInheritRefs(true);
+        			call.setTarget("-get_android_buildID");  
+        			call.perform();   				
+
+        			echo = project.createTask("echo");
+        			echo.setMessage("Waiting and checking on android build status");
+        			echo.perform();
+        			
+        			var file2 = new File(project.getProperty("be.temp.dir") + "/be.android.json");
+        			fr2 = new FileReader(file2);
+        			br2 = new BufferedReader(fr2);
+        			
+        			var json2 = br2.readLine();
+        			var struct2 = eval("(" + json2 + ")");
+        			project.setProperty("android_buildID",struct2["buildID"]);
+        			       			
+        			echo.setMessage("CONFIG be.temp.dir= " + project.getProperty("be.temp.dir") + " android_buildID= " + project.getProperty("android_buildID"));
+        			echo.perform();
+        			
+        			var file = new File(project.getProperty("be.temp.dir") + "/" + project.getProperty("android_buildID") + "_status.out");
+        			fr = new FileReader(file);
+        			br = new BufferedReader(fr);
+        			
+        			// Read the file. 
+        			// This assumes the file has no line breaks and is one line.
+        			var json = br.readLine();
+
+        			// Evaluate the JSON.
+        			var struct = eval("(" + json + ")");
+        			        			     			
+        			if ("COMPLETED".equals(struct["state"]))  {
+        				self.setValue(true);
+        				if ("Cancelled".equals(struct["stage"]) || "Died".equals(struct["stage"])) {
+        					project.setProperty("android_build_cancelled",true);
+        					echo.setMessage("BUILD WAS CANCELLED... ");
+        					echo.perform();
+        				} else if ("Built".equals(struct["stage"])) {
+        				    echo.setMessage("BUILD HAS COMPLETED AND android APP HAS BEEN DEPLOYED.  DOWNLOAD APP FROM APP CENTER");
+        					echo.perform();
+        				} else if ("Failed".equals(struct["stage"])) {
+        					project.setProperty("android_build_failed",true);
+        					echo.setMessage("BUILD HAD FAILED... CHECK WITH ADMINISTRATOR");
+        					echo.perform();
+        				}     				
+        			} else {
+        				echo.setMessage("BUILD IN PROGRESS... " + struct["state"] + ": " + struct["stage"]);
+        				echo.perform();
+        				self.setValue(false); 
+        			}     			
+				</scriptcondition>
+       </waitfor>
+       <fail
+ 	    	if="android_build_failed"
+ 	    	message="android Build has failed. Contact administrator for more details."    />
+       
+        <fail
+ 	    	if="android_build_cancelled"
+ 	    	message="Build request has been cancelled by administrator. Please try again or contact administrator to report problem."    />
+       
+	</target>
+	
+        
+    <target name="-check_buildenvoy_android_status"  description="checks build and deploy status for android build request">
+         <echo>checking build envoy_status for android build request: ${android_buildID}</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be_android_status.out" outputproperty="be_android_status.out" errorproperty="be_android_status.err" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/status/${android_buildID}" />
+		</exec>
+		<echo message = "${be_android_status.out}"/>
+ 		<condition property="android_statuserror_resourcenotavailable_found">
+ 	    	<contains string="${be_android_status.out}" substring="The requested resource () is not available." casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${android_statuserror_resourcenotavailable_found}"
+ 	    	message="BuildEnvoy is currently not reachable. 
+ 	    	Contact the system administrator to report problem."    />
+ 		 <condition property="android_statuserror_found">
+ 	    	<contains string="${be_android_status.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${android_statuserror_found}"
+ 	    	message="Problems encountered.  Please check error message above.  
+ 	    	Ensure your id and password are correctly set.  
+ 	    	Ensure your AppID is set to comply with com.ibm.cio.be.* format."    />
+ 		 <antcall target="-get_buildenvoy_android_status"/>
+    </target>
+    
+    <target name="-get_buildenvoy_android_status" description="gets android build status">
+         <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_android_status.json" >       
+			<arg value="-1" />
+			<arg value="be_android_status.out" />
+		</exec>
+		
+        <exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_android_status.json" >       
+			<arg value="-1" />
+			<arg value="be_android_status.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting android build status");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be_android_status.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("android_" + i,struct[i]);
+            	if ("state".equals(i)) {
+            		echo.setMessage("FOUND state: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        	
+
+        </script> 
+        <echo>android_state FOUND state ${android_state}</echo> 
+        <echo>${be.temp.dir}/${android_buildID}_status.out</echo> 
+		<echo file="${be.temp.dir}/${android_buildID}_status.out">{"state":"${android_state}","stage":"${android_stage}"}</echo>    
+    </target>
+    
+
+    
+	<!-- ##################################### IPAD ##################################### -->
+	
+	<target name="-prep_ipad" depends="-clean" description="gather necessary artifacts">
+         <echo>zipping up ipad xcode project</echo>
+         <mkdir dir="${be.temp.dir}"/>
+         <zip destfile="${be.temp.dir}/be_ipad.zip"  basedir="ipad/native"/>
+    </target>
+    
+	<target name="buildenvoy_ipad" depends="-config,-config_ios,-prep_ipad" description="launch remote ipad build and deploy app">
+         <echo>starting ipad remote build and deploy</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be.ipad.out"  outputproperty="be.ipad.out" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="--form-string" />
+			<arg value="signingSetup=${SigningSetupiOS}" />
+			<arg value="--form-string" />
+			<arg value="AppCenter=${AppCenter}" />
+			<arg value="--form-string" />
+			<arg value="appDescr=${APPDescription}" />
+			<arg value="--form-string" />
+			<arg value="iOSSDK=${iOSSDK}" />
+			<arg value="-F" />
+			<arg value="file=@be_ipad.zip" />
+			<arg value="-F" />
+			<arg value="http.protocol.expect-continue=true" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/upload/iphone" />
+		</exec>	
+		<echo message = "${be.ipad.out}"/>		
+ 		<condition property="ipad_builderror_found">
+ 	    	<contains string="${be.ipad.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${ipad_builderror_found}"
+ 	    	message="Problems encountered.  Please check error message above for more details.  
+ 	    	Ensure your id and password are correctly set.  
+ 	    	Ensure your AppID is set to comply with com.ibm.cio.be.* format."    />
+ 		<antcall target="-wait_for_ipad_build"/>
+ 		<antcall target="-clean"/>
+ 		 <echo>.</echo>
+        <echo>.</echo>
+        <echo>iPad APPLICATION HAS BEEN SUCCESSFULLY BUILT AND DEPLOYED!!! </echo> 
+    </target>
+    
+	<target name="-get_ipad_buildID" description="gets ipad buildID">
+        
+        <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.ipad.json" >       
+			<arg value="-1" />
+			<arg value="be.ipad.out" />
+		</exec>
+		<exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be.ipad.json" >       
+			<arg value="-1" />
+			<arg value="be.ipad.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting BuildID for ipad request");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be.ipad.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("ipad_" + i,struct[i]);
+            	if (i.equals("buildID")) {
+            		echo.setMessage("FOUND: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        </script> 
+        <echo>ipad_buildID FOUND1 ${ipad_buildID}</echo> 
+        <antcall target="-check_buildenvoy_ipad_status"/>  
+          
+    </target>    
+	
+	<!-- <available file="${be.temp.dir}/45a7e4c20c5d1000e06f314e29ed29ed_status.out"/> -->
+    <!-- var file = new File(project.getProperty("be.temp.dir") + "/45a7e4c20c5d1000e06f314e29ed29ed_status.out"); -->
+    <target name="-wait_for_ipad_build">
+        <echo>WAITING for ipad BUILD Results</echo> 
+		<waitfor maxwait="5" maxwaitunit="minute" checkevery="10" checkeveryunit="second"> 
+		        <scriptcondition language="javascript" value="false">
+    				importClass(java.io.File);
+        			importClass(java.io.FileReader);
+        			importClass(java.io.BufferedReader);
+        			importClass(java.io.FileWriter);
+        			importClass(java.io.BufferedWriter);
+        			
+        			call = project.createTask("antcall");
+        			call.setInheritAll(true);
+        			call.setInheritRefs(true);
+        			call.setTarget("-get_ipad_buildID");  
+        			call.perform();   				
+
+        			echo = project.createTask("echo");
+        			echo.setMessage("Waiting and checking on ipad build status");
+        			echo.perform();
+        			
+        			var file2 = new File(project.getProperty("be.temp.dir") + "/be.ipad.json");
+        			fr2 = new FileReader(file2);
+        			br2 = new BufferedReader(fr2);
+        			
+        			var json2 = br2.readLine();
+        			var struct2 = eval("(" + json2 + ")");
+        			project.setProperty("ipad_buildID",struct2["buildID"]);
+        			       			
+        			echo.setMessage("CONFIG be.temp.dir= " + project.getProperty("be.temp.dir") + " ipad_buildID= " + project.getProperty("ipad_buildID"));
+        			echo.perform();
+        			
+        			var file = new File(project.getProperty("be.temp.dir") + "/" + project.getProperty("ipad_buildID") + "_status.out");
+        			fr = new FileReader(file);
+        			br = new BufferedReader(fr);
+        			
+        			// Read the file. 
+        			// This assumes the file has no line breaks and is one line.
+        			var json = br.readLine();
+
+        			// Evaluate the JSON.
+        			var struct = eval("(" + json + ")");
+        			        			     			
+        			if ("COMPLETED".equals(struct["state"]))  {
+        				self.setValue(true);
+        				if ("Cancelled".equals(struct["stage"]) || "Died".equals(struct["stage"])) {
+        					project.setProperty("ipad_build_cancelled",true);
+        					echo.setMessage("BUILD WAS CANCELLED... ");
+        					echo.perform();
+        				} else if ("Built".equals(struct["stage"])) {
+        				    echo.setMessage("BUILD HAS COMPLETED AND ipad APP HAS BEEN DEPLOYED.  DOWNLOAD APP FROM APP CENTER");
+        					echo.perform();
+        				} else if ("Failed".equals(struct["stage"])) {
+        					project.setProperty("ipad_build_failed",true);
+        					echo.setMessage("BUILD HAD FAILED... CHECK YOUR APP ID AND ENSURE TO REDEPLOY ipad ENVIRONMENT");
+        					echo.perform();
+        				}     				
+        			} else {
+        				echo.setMessage("BUILD IN PROGRESS... " + struct["state"] + ": " + struct["stage"]);
+        				echo.perform();
+        				self.setValue(false); 
+        			}     			
+				</scriptcondition>
+       </waitfor>
+       <fail
+ 	    	if="ipad_build_failed"
+ 	    	message="ipad Build has failed. Ensure your App ID has been set correctly to comply with wildcard: com.ibm.cio.be.
+ 	    	Contact administrator for more details."    />
+       
+        <fail
+ 	    	if="ipad_build_cancelled"
+ 	    	message="Build request has been cancelled by administrator. Please try again or contact administrator to report problem."    />
+       
+	</target>
+	
+        
+    <target name="-check_buildenvoy_ipad_status"  description="checks build and deploy status for ipad build request">
+         <echo>checking build envoy_status for ipad build request: ${ipad_buildID}</echo>
+         <exec executable="curl" failonerror="true"  dir="${be.temp.dir}" output="${be.temp.dir}/be_ipad_status.out" outputproperty="be_ipad_status.out" errorproperty="be_ipad_status.err" logerror="true">
+			<arg value="-i" />
+			<arg value="--insecure" />
+			<arg value="-u" />
+			<arg value="${IBMIntranetID}:${IBMIntranetPW}" />
+			<arg value="${BuildServerURL}/BuildForgeProxy/envoy/status/${ipad_buildID}" />
+		</exec>
+		<echo message = "${be_ipad_status.out}"/>
+ 		<condition property="ipad_statuserror_resourcenotavailable_found">
+ 	    	<contains string="${be_ipad_status.out}" substring="The requested resource () is not available." casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${ipad_statuserror_resourcenotavailable_found}"
+ 	    	message="BuildEnvoy is currently not reachable. 
+ 	    	Contact the system administrator to report problem."    />
+ 		 <condition property="ipad_statuserror_found">
+ 	    	<contains string="${be_ipad_status.out}" substring="error" casesensitive="false" />
+ 		</condition>
+ 		<fail
+ 	    	if="${ipad_statuserror_found}"
+ 	    	message="Problems encountered.  Please check error message above.  
+ 	    	Ensure your id and password are correctly set.  
+ 	    	Ensure your AppID is set to comply with com.ibm.cio.be.* format."    />
+ 		 <antcall target="-get_buildenvoy_ipad_status"/>
+    </target>
+    
+    <target name="-get_buildenvoy_ipad_status" description="gets ipad build status">
+         <exec executable="tail" osfamily="unix" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_ipad_status.json" >       
+			<arg value="-1" />
+			<arg value="be_ipad_status.out" />
+		</exec>
+		
+        <exec executable="tail.bat" osfamily="windows" failonerror="true"  dir="${be.temp.dir}"  output="${be.temp.dir}/be_ipad_status.json" >       
+			<arg value="-1" />
+			<arg value="be_ipad_status.out" />
+		</exec>
+        
+        <script language="javascript">
+
+        	importClass(java.io.File);
+        	importClass(java.io.FileReader);
+        	importClass(java.io.BufferedReader);
+        	importClass(java.io.FileWriter);
+        	importClass(java.io.BufferedWriter);
+
+        	echo = project.createTask("echo");
+        	echo.setMessage("Getting ipad build status");
+        	echo.perform();
+
+        	var file = new File(project.getProperty("be.temp.dir") + "/be_ipad_status.json");
+        	fr = new FileReader(file);
+        	br = new BufferedReader(fr);
+
+        	// Read the file. 
+        	// This assumes the file has no line breaks and is one line.
+        	var json = br.readLine();
+
+        	// Evaluate the JSON.
+        	var struct = eval("(" + json + ")");
+
+        	// Set each property in the project environment.
+        	for (i in struct) {
+            	echo = project.createTask("echo");
+            	echo.setMessage(i + "=" + struct[i]);
+            	echo.perform();
+            	project.setProperty("ipad_" + i,struct[i]);
+            	if ("state".equals(i)) {
+            		echo.setMessage("FOUND state: " + i + "=" + struct[i]);
+             		echo.perform();
+            	}          
+        	}
+        	
+
+        </script> 
+        <echo>ipad_state FOUND state ${ipad_state}</echo> 
+        <echo>${be.temp.dir}/${ipad_buildID}_status.out</echo> 
+		<echo file="${be.temp.dir}/${ipad_buildID}_status.out">{"state":"${ipad_state}","stage":"${ipad_stage}"}</echo>    
+    </target>
+       
+</project>

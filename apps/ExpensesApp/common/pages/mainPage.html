@@ -1,0 +1,41 @@
+<!-- Include the javascript file for this page -->
+<script src="js/view/mainPage.js"></script>
+
+<div data-role="home" id="home">
+	<div data-role="header" data-theme="a">
+		<h1>Expense Companion</h1>
+	</div>
+	
+	<div data-role="content" class="contentHome">
+		<h2>Welcome!</h2>
+		<ul class="homeNav">
+			<li id="addExpense">
+				<a><img src="images/camera-icon-small.png">Add Expense</a>
+			</li>
+			<li id="processTrip">
+				<a><img src="images/gears-icon.png">Process Trips</a>
+			</li>
+			<li id="history">
+				<a><img src="images/time-icon.png">History</a>
+			</li>
+		</ul>
+		<div class="opacity"></div>
+		<div class="attachReceipt">
+			<span class="question">Where would you like to attach from?</span>
+			<ul>
+				<li id="openCamera"><img src="images/camera-icon-small.png">Camera</li>
+				<li id="openLibrary"><img src="images/photo-icon.png">Photos</li>
+			</ul>
+			<a id="noReceipt" class="" data-role="button" data-theme="a">I don't have a receipt</a>
+			<a id="closeAttachmentOptions" class="" data-role="button" data-theme="b">Cancel</a>
+		</div>
+	</div>
+	
+	<div class="alert">
+		<div id="container">
+			<span class="alertHeading">Expense Created.</span>
+			<p id="alertMsg"></p>
+			<a id="okBtn" data-role="button" data-theme="a">OK</a>
+		</div>
+	</div>
+</div>

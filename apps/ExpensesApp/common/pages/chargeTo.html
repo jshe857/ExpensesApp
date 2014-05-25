@@ -1,0 +1,47 @@
+<script src="js/view/chargeTo.js"></script>
+<div>
+	<div data-role="header" data-theme="c">
+		
+		<button class="ui-icon-nodisc ui-icon-alt back" data-role="button" data-theme="e" data-icon="arrow-l" data-iconpos="notext" data-direction="reverse"></button>
+	    <h2>Charge To:</h2>
+	    <button class="ui-icon-nodisc ui-icon-alt btnShowModal" data-role="button" data-theme="e" data-icon="plus" data-iconpos="notext"> </button>
+	    
+	</div>
+	
+	<div data-role="content">
+		<canvas class="receiptThumb" width="75" height="75" id="chargeToThumb"></canvas>
+	   <p>Where should this expense be charged?</p>
+		<ul data-role="listview" data-theme="d" data-inset="true" class="ui-icon-nodisc clear" id="selectCodeList"></ul>
+		<div class='horizontal-rule'></div>
+		<a class="finishLater" data-role="button" data-theme="a">Finish this later</a>
+		<a class="cancelBtn" data-role="button" data-theme="b">Cancel</a>	
+		
+		<div class="opacity"></div>
+		
+		<div class="confirm">
+			<span class="question">This expense will be deleted. Are you sure?</span>
+			<a id="noBtn" data-role="button" data-theme="a">No</a>
+			<a id="yesBtn" data-role="button" data-theme="b">Yes</a>
+		</div>	
+	 </div>
+
+	<div data-role="popup" id="popupDialogue" data-overlay-theme="b" data-theme="b" data-dismissible="false" data-history="false" style="max-width:400px;">
+       <div data-role="main" class="ui-content">
+        <span class="question">Add Client Code</span>
+          <div class="hidden" id="descriptionErrorMsg">"Description of Account" is a required field.</div>
+          <input type="text" class="field" id="accDescription" required placeholder="Description of Account *" />
+          <select id="combobox" data-theme="c" data-icon="arrow-d" ></select>
+          <input type="text" class="field" id="accID" required placeholder="Account/Project ID" />
+          <button id="submitAddCode" class="" data-theme="a">Submit</button>
+          <button id="cancelAddCode" data-theme="b">Cancel</button>
+      </div>      
+   </div>
+
+	<div class="alert">
+		<div id="container">
+			<span class="alertHeading">Expense Created.</span>
+			<p id="alertMsg"></p>
+			<a id="okBtn" data-role="button" data-theme="a">OK</a>
+		</div>
+	</div>
+</div>

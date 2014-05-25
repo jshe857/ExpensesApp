@@ -1,0 +1,35 @@
+<script src="js/view/expenseType.js"></script>
+
+<div>
+	<div data-role="header" data-theme="c">
+		<h2>Expense Type</h2>
+		<button class="ui-icon-nodisc ui-icon-alt back" data-role="button" data-theme="e" data-icon="arrow-l" data-iconpos="notext" data-direction="reverse"></button>
+	</div>
+
+	<div data-role="content">
+		<canvas class="receiptThumb" width="75" height="75" id="expenseTypeThumb"></canvas>
+		<p>What type of expense is this receipt?</p>
+		<ul id="expenseList" data-role="listview" data-theme="d" data-inset="true" class="ui-icon-nodisc clear">
+			<li data-role="list-divider">Expense Types</li>
+		</ul>
+		<div class='horizontal-rule'></div>
+		<a class="finishLater" data-role="button" data-theme="a">Finish this later</a>
+		<a class="cancelBtn" data-role="button" data-theme="b">Cancel</a>
+
+		<div class="opacity"></div>
+		
+		<div class="confirm">
+			<span class="question">This expense will be deleted. Are you sure?</span>
+			<a id="noBtn" data-role="button" data-theme="a">No</a>
+			<a id="yesBtn" data-role="button" data-theme="b">Yes</a>
+		</div>
+	</div>	
+	
+	<div class="alert">
+		<div id="container">
+			<span class="alertHeading">Expense Created.</span>
+			<p id="alertMsg"></p>
+			<a id="okBtn" data-role="button" data-theme="a">OK</a>
+		</div>
+	</div>
+</div>

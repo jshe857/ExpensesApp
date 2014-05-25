@@ -1,0 +1,64 @@
+<script src="js/view/tripExpenses.js"></script>
+<div>
+	<div data-role="header" data-theme="c">
+		<button class="ui-icon-nodisc ui-icon-alt back" data-role="button" data-theme="e" data-icon="arrow-l" data-iconpos="notext" data-direction="reverse"></button>
+		<h2>Trip</h2>
+		<button class="ui-icon-nodisc ui-icon-alt" data-role="button" data-theme="e" data-icon="gear" data-iconpos="notext" id="editTrip"></button>
+	</div>
+	
+	<div data-role="content" data-theme="d">
+		<div id="tripDetails">
+			<h3 id="tripName"></h3>
+			<div id="tripStartTitle">Starts: <span id="tripStart"></span></div>
+			<div id="tripEndTitle">Ends: <span id="tripEnd"></span></div>
+			<div id="processedDate"></div>
+		</div>		
+		
+		<ul id="expenseList" data-role="listview" data-theme="d" data-inset="true" class="ui-icon-nodisc expenseList"></ul>
+		
+		<div class='horizontal-rule'></div>
+		
+		<div class="tripDetailsBtnArea">
+			<span id="emailLogBtnArea" class="hidden"><button id="emailLogBtn" data-theme="b">Email Log</button></span>
+			<button id="sendTripDetailsBtn" data-theme="a">Send Trip Details</button>
+			<a id="deleteBtn" class='hidden' data-role="button" data-theme="b" data-inline="false">Delete Trip</a>
+		</div>
+		
+		<div class="opacity"></div>		
+		
+		<div class="sendDetailsContainer">
+			<form id="emailForm">
+				<span>Where would you like to send this trip?</span>
+				<span class="hidden" id="emailError">Email address is a required field.</span>
+				<input type="text" id="sendTripEmailAddress" required placeholder="Email address *" />
+			</form>
+			<div id="recentEmailArea" class="hidden">
+				<ul data-role="listview" id="recentEmailList" class="ui-icon-nodisc" data-icon="false" data-theme="c">
+					<li data-role="list-divider" id="emailListDivider" class="ui-bar-f">Recent</li>
+				</ul>
+			</div>
+			<div class="sendDetailsBtns">
+				<button id="submitTripDetailsBtn" data-theme="a">Send Trip Details</button>
+				<button id="cancelSendDetailsBtn" data-theme="b">Cancel</button>
+			</div>
+		</div>
+		
+		<div class="confirm">
+			<span class="question">This trip and all its expenses will be deleted. Are you sure?</span>
+			<a id="noBtn" data-role="button" data-theme="a">No</a>
+			<a id="yesBtn" data-role="button" data-theme="b">Yes</a>
+		</div>
+	</div>
+
+	<div data-role="popup" id="editTripModal" data-theme="b" data-dismissible="false" data-history="false" style="max-width:400px;">
+		<div data-role="main" class="ui-content">
+			<span class="question">Edit Trip</span>
+			<div class="hidden" id="editTripError">"Description of Trip" is a required field.</div>
+			<input type="text" class="field" id="editTripDescription" required placeholder="Description of Trip" />	
+			<input id="editStartDate" type="text" placeholder="Starts (yyyy-mm-dd)"/>
+			<input id="editEndDate" type="text" placeholder="Ends (yyyy-mm-dd)" />
+			<button id="submitEditTrip" data-theme="a">Submit</button>
+			<button id="cancelEditTrip" data-theme="b">Cancel</button>
+		</div>
+	</div>
+</div>

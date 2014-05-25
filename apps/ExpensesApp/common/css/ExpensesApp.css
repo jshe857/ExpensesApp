@@ -1,0 +1,376 @@
+/* Reset CSS */
+a, abbr, address, article, aside, audio, b, blockquote, body, canvas, caption, cite, code, dd, del, details, dfn, dialog, div, dl, dt, em, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, header, hgroup, html, i, iframe, img, ins, kbd, label, legend, li, mark, menu, nav, object, ol, p, pre, q, samp, section, small, span, strong, sub, summary, sup, table, tbody, td, tfoot, th, thead, time, tr, ul, var, video {
+	margin: 0;
+	padding: 0;
+}
+body{
+	height:100%;
+	position:relative;
+}
+.bold {
+	font-weight: bold;
+}
+ul li.ui-icon-hide span.ui-icon-arrow-r {
+	margin: -999px;
+}
+ul li[data-role="collapsible"] div {
+	background: #006093;
+	z-index: 0;
+}
+/* Worklight container div */
+
+/* ----------------------------------------- Index */
+
+#content {
+	height: 460px;
+	margin: 0 auto;
+	width: 320px;
+}
+#content p{
+	font-weight:bold;
+}
+.homeNav img, .attachReceipt img{
+	display:block;
+	margin:10px auto;
+}
+.homeNav{
+	/*float:right;*/
+	margin-top:15px;
+	margin-right: 10px;
+}
+.homeNav li{
+	padding:4%; 
+	height:75px;
+	width:100px;
+	float:right;
+	clear:right;
+	background:rgba(0,66,102,.7);
+	margin-bottom:5%;
+	text-align:center;
+	font-weight:normal;
+}
+.clear {
+	clear:both;
+}
+.opacity{
+	position:absolute;
+	top:0;
+	left:0;
+	right:0;
+	bottom:0;
+	opacity:0.6;
+	background-color:#000;
+	display:none;
+	z-index: 9998;
+}
+.alert {
+	background: #FFFFFF;
+	display: none;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	margin: auto;
+	position: absolute;
+	width: 270px;
+	height: 265px;
+	z-index: 9999;
+}
+.alertHeading {
+	color: #00a6a0;
+	display: block;
+	font-size: 14pt;
+	font-weight: normal;
+	padding: 20px 0 20px 0;
+	text-align: center;
+}
+.alert #container {
+	margin-top: 5%;
+	margin-bottom: 5%;
+}
+.alert p {
+	font-weight: normal !important;
+	margin: 0 20px 20px 20px;
+}
+.alert a {
+	margin: 10px 20px 0 20px;
+}
+.alert .bold {
+	font-size: 11pt;
+}
+.ui-body-c .ui-link{
+	font-weight:normal;
+}
+.contentHome{
+	background-image:url('../images/melbourne.jpg');
+    background-position:right;
+    position:absolute;
+    right:0;
+    left:0;
+    bottom:0;
+    overflow:hidden;
+    top:42px;
+}
+.contentHome h2{
+	color:#004266;
+	font-weight:normal;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	padding-left: 10px;
+}
+.attachReceipt{
+	display:none;
+	position:absolute;
+	bottom:-210px;
+	left:0;
+	height:210px;
+	width:91%;
+	padding:5%;
+	background:#FFFFFF;
+	color:#fff;
+	z-index: 9999;
+}
+.attachReceipt li{
+	padding:5%; 
+	height:50px;
+	background:rgba(0,66,102,1);
+	margin:4% 0%;
+	text-align:center;
+	font-weight:normal;
+	width:35%;
+	float:left;
+}
+.attachReceipt li:first-child{
+	margin-right:10%;
+}
+.attachReceipt img{
+	display:block;
+	margin:auto;
+	padding-bottom:7px;
+}
+.attachReceipt a{
+	clear:left;
+}
+.question{
+	font-weight:bold;
+	color:#656162;
+	display:block;
+	text-align:center;
+}
+.back{
+	border-style:none;
+}
+.confirm {
+	z-index: 9999;
+	display: none;
+	position:absolute;
+	bottom:-210px;
+	left:0;
+	height:210px;
+	width:91%;
+	padding:5%;
+	background:#FFFFFF;
+	color:#fff;	
+}
+.receiptThumb + p {
+	position: absolute;
+	padding-left: 95px;
+	margin-right: 5px;
+}
+.horizontal-rule {
+	border-top: 1px solid #999;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	margin-left: -20px;
+	margin-right: -20px;
+}
+ul#expenseList,
+ul#expenseDetailsList,
+ul#selectCodeList,
+ul#selectTripList {
+	margin-top: 94px;
+}
+#tripDetails + #expenseList {
+	margin-top: 18px;
+}
+
+/** Edit Expense **/
+#expenseDetailsList {
+	margin-bottom: 40px;
+}
+
+/* Expense Type Page receipt thumbnail formatting */
+.receiptThumb {
+	float:left;
+	margin:0% 2% 2% 0% ;
+	border: 1px solid #888;
+	border-radius: 5px;
+}
+
+/* Expense Type Selection Collapsible Format */
+.expenseTypeLI {
+	padding: 0px 0px 0px 0px !important;
+}
+
+.selectClaim {
+	clear:both;
+}
+
+.accountForm {
+	display:none;
+	position:absolute;
+	bottom:-210px;
+	left:0;
+	height:210px;
+	width:90%;
+	padding:5%;
+	background:#FFFFFF;
+	color:#fff;
+}
+
+.hidden {
+	display: none !important;
+}
+.deleteExpense{
+	margin-top:20px;
+}
+#descriptionErrorMsg, 
+#editTripError,
+#emailError {
+	color:#FF0000;
+	width:195px;
+	margin-top:5px;
+}
+/*---------------------------combobox-------------*/
+
+.custom-combobox {
+   position: relative;
+   display: inline-block;
+ }
+ .custom-combobox-toggle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	margin-left: -1px;
+	padding: 0;
+	/* support: IE7 */
+	*height: 1.7em;
+	*top: 0.1em;
+ }
+ .custom-combobox-input {
+	margin: 0;
+	padding: 0.3em;
+}
+.ui-btn-up-c{
+	font-weight:normal;
+}
+
+/*---------------------------send details------------*/
+.sendDetailsContainer {
+	display:none;
+	height: 284px;
+	position: absolute;
+	bottom: -284px;
+	left:0;
+	width:91%;
+	padding:5%;
+	background:#FFFFFF;
+	z-index:9999;
+}
+
+/*---------------------------trip details------------*/
+/*.tripDetailsBtnArea {
+	position: absolute;
+	border-top: 1px solid #ADADAD;
+	bottom: 0px;
+	width: 91%;
+}*/
+
+#tripDetails {
+	font-size: 11pt;
+}
+#tripName {
+	font-size: 16pt;
+}
+#tripStartTitle {
+	padding-top: 10px;
+}
+#tripEndTitle {
+	margin-top: -17px;
+	margin-left: 150px;
+}
+#processedDate {
+	display: none;
+	font-weight: bold;
+	padding-top: 12px;
+}
+#recentEmailArea {
+	width: 100%;
+}
+#recentEmailArea .ui-listview {
+	margin: 0 -15px;
+}
+
+/*--------------------process/select trips------------*/
+#noTripsMsg {
+	border: none;
+	text-align: center;
+	font-style: italic;
+	color: #888;
+	text-shadow: 0;
+ 	background: none;
+}
+
+/** Trip lists **/
+#historyList p,
+#selectTripList p,
+#tripList p {
+	font-weight: normal;
+}
+
+/** Send trip **/
+#sendTripEmailAddress {
+	-webkit-user-modify: read-write-plaintext-only;
+}
+
+/** Email log **/
+#emailList {
+	box-shadow: none;
+	margin-top: 0;
+	margin-left: -15px;
+	margin-right: -15px;
+}
+#emailList li {
+	background: none;
+	border: none;
+	border-top: 2px solid #333;
+	color: #4b4b4b;
+	padding-left: 0;
+	padding-right: 0;
+}
+#emailList li.ui-btn-up-g {
+	background: none;
+}
+#emailList li:first-child {
+	border-top: none;
+	padding-top: 5px;
+}
+#emailList li div {
+	padding-left: 15px;
+	padding-right: 15px;
+}
+#emailList li div:first-child {
+	padding-bottom: 10px;
+}
+#emailList li div:last-child {
+	padding-top: 10px;
+}
+#emailList li span.hr {
+	border-top: 1px solid #bbb;
+	display: block;
+	margin-left: 15px;
+	margin-right: 15px;
+}
+#emailList li div span:last-child {
+	float: right;
+}
